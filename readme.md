@@ -1,5 +1,12 @@
 # Home Assignment: Scratch Game #
 
+## Running ##
+
+```bash
+ ./mvnw clean verify
+ java -jar target/scratch.jar --config src/test/resources/config-example.json --betting-amount 100
+```
+
 
 ## Requirements ##
 
