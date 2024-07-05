@@ -76,9 +76,47 @@ class ScratchGameEngineSpec extends Specification {
     def result = game.play(100)
 
     then:
-    result.reward == 175000 // (100 * 50 * 1.5 * 10) for A (4 times, higher multiplier) + (100 * 25 * 1 * 10) for B (3 times)
+    result.reward == 175000 // ((100 * 50 * 1.5 * 2) + (100 * 25 * 1 ))*10
     result.appliedWinningCombinations == ["A": ["same_symbol_4_times", "same_symbols_horizontally"], "B": ["same_symbol_3_times"]]
     result.appliedBonusSymbol == "10x"
+  }
+
+
+  def "Test from assignment should work"() {
+    given:
+    def config = new GameConfig()
+    config.setRows(3)
+    config.setColumns(3)
+    config.setSymbols([
+        "A"    : new Symbol(rewardMultiplier: 5, type: "standard"),
+        "B"    : new Symbol(rewardMultiplier: 3, type: "standard"),
+        "+1000": new Symbol(extra: 1000, type: "bonus", impact: "extra_bonus")
+    ])
+    config.setWinCombinations([
+        "same_symbol_3_times"    : new WinCombination(rewardMultiplier: 1, when: "same_symbols", count: 3, group: "same_symbols"),
+        "same_symbol_5_times"    : new WinCombination(rewardMultiplier: 5, when: "same_symbols", count: 4, group: "same_symbols"),
+        "same_symbols_vertically": new WinCombination(rewardMultiplier: 2, when: "linear_symbols", group: "vertically_linear_symbols",
+            coveredAreas: [
+                ["0:0", "1:0", "2:0"],
+                ["0:1", "1:1", "2:1"],
+                ["0:2", "1:2", "2:2"]
+            ]),
+
+    ])
+    def game = new GameEngine(config, new SecureRandom())
+
+    game.matrix = [["A", "A", "B"],
+                   ["A", "+1000", "B"],
+                   ["A", "A", "B"]]
+    when:
+    def result = game.play(100)
+
+    then:
+    print objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result)
+
+    result.reward == 6600
+    result.appliedWinningCombinations == ["A": ["same_symbol_5_times", "same_symbols_vertically"], "B": ["same_symbol_3_times", "same_symbols_vertically"]]
+    result.appliedBonusSymbol == "+1000"
   }
 
   def "Should apply only one combination of a group"() {
@@ -132,9 +170,13 @@ class ScratchGameEngineSpec extends Specification {
     def result = game.play(1)
 
     then:
-    print objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result)
+    // (1 * 50 * 20 * 2 * 2 * 5 * 5) + 500
     result.reward == 100500
-    result.appliedWinningCombinations == ["A": ["same_symbol_9_times", "same_symbols_horizontally", "same_symbols_vertically", "same_symbols_diagonally_left_to_right", "same_symbols_diagonally_right_to_left"]]
+    result.appliedWinningCombinations == ["A": ["same_symbol_9_times",
+                                                "same_symbols_horizontally",
+                                                "same_symbols_vertically",
+                                                "same_symbols_diagonally_left_to_right",
+                                                "same_symbols_diagonally_right_to_left"]]
     result.appliedBonusSymbol == "+500"
   }
 }
