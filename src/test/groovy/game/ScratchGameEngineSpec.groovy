@@ -47,7 +47,22 @@ class ScratchGameEngineSpec extends Specification {
 
     then:
     print objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result)
-    result.reward() >= null
+    result.matrix().length == 3
+    result.matrix()[0].length == 3
+  }
+
+  def "Should work correctly with full configuration 4x4"() {
+    def config = objectMapper.readValue(readJsonFile("config-example4x4.json"), GameConfig)
+    def game = new GameEngine(config, new SecureRandom())
+
+    when:
+    game.generateMatrix()
+    def result = game.play(100)
+
+    then:
+    print objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result)
+    result.matrix().length == 4
+    result.matrix()[0].length == 4
   }
 
   def "Game should apply only the highest paying combination per group"() {
